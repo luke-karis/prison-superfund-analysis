@@ -16,29 +16,52 @@ prison_data <- st_read(prison_shp_path)
 superfund_data <- st_read(superfund_shp_path)
 
 # Ensure both datasets are in the same CRS
-prison_data <- st_transform(prison_data, crs = 4326)
-superfund_data <- st_transform(superfund_data, crs = 4326)
+prison_data <- st_transform(prison_data, crs = 3857) # 4326 (was previously using 4326 but was encountering )
+superfund_data <- st_transform(superfund_data, crs = 3857)
 
-# Create buffer zones around superfund sites and prisons for future analysis
+st_crs(superfund_data)
+# Create buffer zones around all Superfund sites for future analysis
 superfund_buffer_3 <- st_buffer(superfund_data, dist = 3 * 1609.34)
 
-# Find intersections between superfund buffers and prisons
-prisons_within_3_miles <- st_intersection(prison_data, superfund_buffer_3)
+##subset both datasets for quicker analysis (selected Texas because of decent Prison and Superfund sample sizes)
+texas_superfund_buffer_3 <- superfund_buffer_3[which(superfund_buffer_3$State=="Texas"),]
+texas_prison_data <- prison_data[which(prison_data$STATE=="TX"),]
 
-# Idenitfy prisons that DO NOT intersect with a superfund buffers 
-prisons_outside_3_miles <- st_difference(prison_data, st_union(superfund_buffer_3))
+texas_within_3_miles <-st_intersection(texas_prison_data, texas_superfund_buffer_3)
+# Remove duplicates based on the FID column in texas_prison_data
+texas_within_3_miles_nodupes <- texas_within_3_miles[!duplicated(texas_within_3_miles$FID), ]
+### generates a total of 33 unique facilities within superfund
 
-# Optionally, check the result
-print(prisons_outside_3_miles)
+### identify prisons in Texas OUTSIDE of the 3-mile Superfund buffer
+texas_outside_3_miles <- st_difference(texas_prison_data,st_union(texas_superfund_buffer_3))
+
+#texas_outside_3_miles_nodupes <- texas_outside_3_miles[!duplicated(texas_outside_3_miles$FID), ]
+### no duplicates found
+
+### Checking duplicates
+# duplicates <- texas_outside_3_miles$FID[duplicated(texas_outside_3_miles$FID)]
+# duplicates <- texas_within_3_miles$FID[duplicated(texas_within_3_miles$FID)]
+# duplicates <- texas_prison_data$FID[duplicated(texas_prison_data$FID)]
+
+# Assuming 'df1' and 'df2' are your data frames and 'facility_id' is the common identifier
+# Check which facilities in df1 are in df2
+df2_common <- texas_outside_3_miles[texas_outside_3_miles$facility_id %in% texas_within_3_miles_nodupes$facility_id, ]
+
+# Print the common facilities
+print(df1_common)
+
+
+# Print the duplicate values
+print(duplicates)
 
 
 
 ########### chi-square analysis
 # Create a contingency table
-contingency_table <- table(data$prisons_within_3_miles, data$Category2)
+prison_contingency_table <- table(data$prisons_within_3_miles, data$prisons_outside_3_miles)
 
 # Print the contingency table
-print(contingency_table)
+print(prison_contingency_table)
 
 
 ###### ###
