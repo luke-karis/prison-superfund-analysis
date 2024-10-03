@@ -327,7 +327,6 @@ print(t_test_result_clean)
 # cat("T-test result:\n")
 # print(t_test_result_take2)
 
-
 ########## Failed attempt down here
 
 # ### Generate 3mile radius CSV w/ Superfund data
